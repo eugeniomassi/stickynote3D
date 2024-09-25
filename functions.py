@@ -18,12 +18,10 @@ def create_postit(context, title, description, user, color, size, location, rota
     # Applica la rotazione se fornita
     if rotation:
         postit_obj.rotation_euler = rotation
-    
-    description_lines = split_description(description)
 
     # Assegna i dati come proprietà personalizzate
     postit_obj["postit_title"] = title
-    postit_obj["postit_description"] = description_lines
+    postit_obj["postit_description"] = description
     postit_obj["postit_user"] = user
     postit_obj["postit_datetime"] = datetime.now().strftime("%H:%M %d/%m/%Y")
 

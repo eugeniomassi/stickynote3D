@@ -2,7 +2,7 @@ import bpy
 import bmesh
 from mathutils import Matrix, Vector
 from datetime import datetime
-from .functions import split_description, create_postit
+from .functions import create_postit
 
 class CreatePostItOperator(bpy.types.Operator):
     bl_idname = "object.create_postit"
@@ -18,7 +18,7 @@ class CreatePostItOperator(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self, width=400)
 
     def execute(self, context):
-        location = (0, 0, 0)  # Default location
+        location = (0, 0, 0)
         create_postit(context, self.title, self.description, self.user, self.color, self.size, location)
         return {'FINISHED'}
 
@@ -42,17 +42,17 @@ class CreatePostItFaceSelectedOperator(bpy.types.Operator):
         bm = bmesh.from_edit_mesh(obj.data)
         selected_faces = [f for f in bm.faces if f.select]
         face = selected_faces[0]
+
         center = face.calc_center_median()
         normal = face.normal
-        size = face.calc_area() ** 0.5  # Prendi la radice quadrata dell'area per determinare la scala
+        size = face.calc_area() ** 0.5
 
         rotation_matrix = normal.to_track_quat('Z', 'Y').to_euler()
 
         bpy.ops.object.mode_set(mode='OBJECT')
 
-        # Parametri del Post-it
-        title = "Post-it"
-        description = "Post-it description"
+        title = "Titolo"
+        description = "Descrizione del Post-it"
         user = "Utente"
         color = (1.0, 1.0, 0.0)
 
@@ -76,7 +76,12 @@ class EditPostItOperator(bpy.types.Operator):
         obj = bpy.data.objects.get(self.postit_name)
         if obj:
             self.new_title = obj["postit_title"]
-            self.new_description = ''.join(obj["postit_description"])  # Riunisce i segmenti per la modifica
+
+            description = obj["postit_description"]
+            if isinstance(description, list):
+                description = " ".join(description)
+            self.new_description = description
+            
             self.new_user = obj["postit_user"]
             if obj.active_material and obj.active_material.diffuse_color:
                 self.new_color = obj.active_material.diffuse_color[:3]
@@ -93,16 +98,12 @@ class EditPostItOperator(bpy.types.Operator):
     def execute(self, context):
         obj = bpy.data.objects.get(self.postit_name)
         if obj:
-            # Divide la descrizione in segmenti
-            description_segments = split_description(self.new_description)
-
             # Aggiorna i dati del Post-it
             obj["postit_title"] = self.new_title
-            obj["postit_description"] = description_segments
+            obj["postit_description"] = self.new_description
             obj["postit_user"] = self.new_user
             obj["postit_datetime"] = datetime.now().strftime("%H:%M %d/%m/%Y")
             
-            # Cambia il colore del materiale
             if obj.active_material:
                 obj.active_material.diffuse_color = (*self.new_color, 1.0)
             else:

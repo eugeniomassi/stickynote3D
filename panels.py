@@ -1,4 +1,5 @@
 import bpy
+from .functions import split_description
 
 class PostItPanel(bpy.types.Panel):
     """Pannello per gestire i Post-it nella scena"""
@@ -33,14 +34,20 @@ class PostItPanel(bpy.types.Panel):
                     box = col.box()
                     box.label(text=f"{obj['postit_title'].upper()}")
 
-                    # Visualizza ogni segmento di descrizione come un'etichetta separata
-                    for line in obj["postit_description"]:
+                    description_lines = []
+                    description = obj.get("postit_description", "")
+                    if isinstance(description, list):
+                        description = " ".join(description)
+                    if isinstance(description, str):
+                        description_lines = split_description(description)
+                    for line in description_lines:
                         box.label(text=line)
 
-                    box.label(text=f"{obj['postit_user']}", icon='USER')
-                    box.label(text=f"{obj['postit_datetime']}", icon='TIME')
+                    # Visualizza autore e data
+                    box.label(text=f"Autore: {obj.get('postit_user', 'Sconosciuto')}", icon='USER')
+                    box.label(text=f"Data: {obj.get('postit_datetime', 'N/A')}", icon='TIME')
                     box.operator("object.edit_postit", text="Modifica", icon='GREASEPENCIL').postit_name = obj.name
-                    box.operator("object.delete_postit", text="Elimina Post-it", icon='TRASH').postit_name = obj.name
+                    box.operator("object.delete_postit", text="Elimina", icon='TRASH').postit_name = obj.name
                     col.separator()
 
 class MESH_MT_add_postit(bpy.types.Menu):
