@@ -6,7 +6,7 @@ import bpy
 
 def create_postit(context, title, description, user, color, size, location, rotation=None):
     # Crea l'oggetto Post-it come un cubo sottile
-    bpy.ops.mesh.primitive_cube_add(scale=(size, size, 0.01), location=location)
+    bpy.ops.mesh.primitive_cube_add(scale=(size, size, 0.05), location=location)
     postit_obj = bpy.context.object
     postit_obj.name = title
 

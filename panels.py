@@ -32,8 +32,9 @@ class PostItPanel(bpy.types.Panel):
                 # Se l'oggetto è selezionato, mostra i dettagli
                 if context.object == obj:
                     box = col.box()
-                    box.label(text=f"{obj['postit_title'].upper()}")
+                    box.label(text=f"{obj['postit_title'].upper()} :")
 
+                    #logica per la descrizione
                     description_lines = []
                     description = obj.get("postit_description", "")
                     if isinstance(description, list):
@@ -43,7 +44,6 @@ class PostItPanel(bpy.types.Panel):
                     for line in description_lines:
                         box.label(text=line)
 
-                    # Visualizza autore e data
                     box.label(text=f"Autore: {obj.get('postit_user', 'Sconosciuto')}", icon='USER')
                     box.label(text=f"Data: {obj.get('postit_datetime', 'N/A')}", icon='TIME')
                     box.operator("object.edit_postit", text="Modifica", icon='GREASEPENCIL').postit_name = obj.name
@@ -56,7 +56,7 @@ class MESH_MT_add_postit(bpy.types.Menu):
 
     def draw(self, context):
         layout = self.layout
-        layout.operator("mesh.create_postit_face", text="Aggiungi Post-it su Faccia Selezionata")
+        layout.operator("mesh.create_postit_face", text="Seleziona una faccia su cui aggiungere il Post-It")
 
 def menu_func(self, context):
     self.layout.menu(MESH_MT_add_postit.bl_idname)
