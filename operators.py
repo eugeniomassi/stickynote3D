@@ -5,12 +5,11 @@ from datetime import datetime
 from .functions import split_description, create_postit
 
 class CreatePostItOperator(bpy.types.Operator):
-    """Crea un nuovo Post-it"""
     bl_idname = "object.create_postit"
     bl_label = "Crea e Modifica Post-it"
 
     title: bpy.props.StringProperty(name="Titolo", default="Nuovo Titolo")
-    description: bpy.props.StringProperty(name="Descrizione", default="Nuova Descrizione", options={'TEXTEDIT_UPDATE'}, maxlen=512)
+    description: bpy.props.StringProperty(name="Descrizione", default="Nuova Descrizione")
     user: bpy.props.StringProperty(name="Autore", default="Utente")
     color: bpy.props.FloatVectorProperty(name="Colore", subtype='COLOR', default=(1.0, 1.0, 0.0), min=0.0, max=1.0)
     size: bpy.props.FloatProperty(name="Dimensione", default=1.0, min=0.1, max=10.0)
@@ -19,15 +18,8 @@ class CreatePostItOperator(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self, width=400)
 
     def execute(self, context):
-        # Chiamata alla funzione per creare il Post-it
-        create_postit(
-            title=self.title,
-            description=self.description,
-            user=self.user,
-            color=self.color,
-            size=self.size,
-            location=(0, 0, 0)
-        )
+        location = (0, 0, 0)  # Default location
+        create_postit(context, self.title, self.description, self.user, self.color, self.size, location)
         return {'FINISHED'}
 
 class CreatePostItFaceSelectedOperator(bpy.types.Operator):
@@ -46,51 +38,26 @@ class CreatePostItFaceSelectedOperator(bpy.types.Operator):
         return False
 
     def execute(self, context):
-        # Ottieni l'oggetto attivo e la faccia selezionata
         obj = context.active_object
         bm = bmesh.from_edit_mesh(obj.data)
         selected_faces = [f for f in bm.faces if f.select]
-        face = selected_faces[0]  # Assumendo che ci sia solo una faccia selezionata
-
-        # Calcola il centro della faccia
+        face = selected_faces[0]
         center = face.calc_center_median()
-
-        # Calcola la normale della faccia
         normal = face.normal
+        size = face.calc_area() ** 0.5  # Prendi la radice quadrata dell'area per determinare la scala
 
-        # Ottieni tre vertici della faccia selezionata per il calcolo della rotazione
-        verts = [v.co for v in face.verts]
-        if len(verts) >= 3:
-            edge1 = (verts[1] - verts[0]).normalized()
-            edge2 = (verts[2] - verts[0]).normalized()
-            tangent = edge1.cross(normal).normalized()
+        rotation_matrix = normal.to_track_quat('Z', 'Y').to_euler()
 
-            # Crea una matrice di rotazione basata sulla normale della faccia
-            rotation_matrix = Matrix((tangent, edge1, normal)).transposed().to_4x4()
-        else:
-            rotation_matrix = Matrix.Identity(4)
-
-        # Esci dalla modalità Edit per creare il post-it come un nuovo oggetto
         bpy.ops.object.mode_set(mode='OBJECT')
 
-        # Crea il post-it come un cubo sottile
-        bpy.ops.mesh.primitive_cube_add(scale=(0.5, 0.5, 0.01), location=obj.matrix_world @ center)
-        postit_obj = bpy.context.object
-        postit_obj.name = "Post-it"
+        # Parametri del Post-it
+        title = "Post-it"
+        description = "Post-it description"
+        user = "Utente"
+        color = (1.0, 1.0, 0.0)
 
-        # Allinea il post-it alla faccia selezionata
-        postit_obj.matrix_world = obj.matrix_world @ rotation_matrix
-        postit_obj.location = obj.matrix_world @ center
-
-        # Aggiungi materiale per il colore
-        material = bpy.data.materials.new(name="PostItMaterial")
-        material.diffuse_color = (1.0, 1.0, 0.0, 1.0)  # Colore giallo
-        postit_obj.data.materials.append(material)
-
-        # Ritorna alla modalità Edit
-        bpy.ops.object.mode_set(mode='EDIT')
-
-        self.report({'INFO'}, "Post-it 3D aggiunto al centro della faccia e allineato")
+        # Crea il Post-it
+        create_postit(context, title, description, user, color, size, obj.matrix_world @ center, rotation_matrix)
         return {'FINISHED'}
     
 class EditPostItOperator(bpy.types.Operator):
@@ -103,6 +70,7 @@ class EditPostItOperator(bpy.types.Operator):
     new_title: bpy.props.StringProperty(name="Titolo")
     new_description: bpy.props.StringProperty(name="Descrizione")
     new_user: bpy.props.StringProperty(name="Utente")
+    new_color: bpy.props.FloatVectorProperty(name="Colore", subtype='COLOR', default=(1.0, 1.0, 0.0), min=0.0, max=1.0)
 
     def invoke(self, context, event):
         obj = bpy.data.objects.get(self.postit_name)
@@ -110,6 +78,8 @@ class EditPostItOperator(bpy.types.Operator):
             self.new_title = obj["postit_title"]
             self.new_description = ''.join(obj["postit_description"])  # Riunisce i segmenti per la modifica
             self.new_user = obj["postit_user"]
+            if obj.active_material and obj.active_material.diffuse_color:
+                self.new_color = obj.active_material.diffuse_color[:3]
             return context.window_manager.invoke_props_dialog(self)
         return {'CANCELLED'}
 
@@ -118,6 +88,7 @@ class EditPostItOperator(bpy.types.Operator):
         layout.prop(self, "new_title", text="Titolo")
         layout.prop(self, "new_description", text="Descrizione")
         layout.prop(self, "new_user", text="Utente")
+        layout.prop(self, "new_color", text="Colore")
 
     def execute(self, context):
         obj = bpy.data.objects.get(self.postit_name)
@@ -129,8 +100,15 @@ class EditPostItOperator(bpy.types.Operator):
             obj["postit_title"] = self.new_title
             obj["postit_description"] = description_segments
             obj["postit_user"] = self.new_user
-            current_time = datetime.now().strftime("%H:%M %d/%m/%Y")
-            obj["postit_datetime"] = current_time
+            obj["postit_datetime"] = datetime.now().strftime("%H:%M %d/%m/%Y")
+            
+            # Cambia il colore del materiale
+            if obj.active_material:
+                obj.active_material.diffuse_color = (*self.new_color, 1.0)
+            else:
+                material = bpy.data.materials.new(name="PostItMaterial")
+                material.diffuse_color = (*self.new_color, 1.0)
+                obj.data.materials.append(material)
             
             return {'FINISHED'}
         return {'CANCELLED'}
