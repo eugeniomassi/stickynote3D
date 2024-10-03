@@ -1,6 +1,5 @@
 import bpy
 import bmesh
-from mathutils import Matrix, Vector
 from datetime import datetime
 from .functions import create_postit
 

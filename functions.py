@@ -25,6 +25,8 @@ def create_postit(context, title, description, user, color, size, location, rota
     postit_obj["postit_user"] = user
     postit_obj["postit_datetime"] = datetime.now().strftime("%H:%M %d/%m/%Y")
 
+    postit_obj.hide_render = True
+
     return postit_obj
 
 def split_description(description, segment_length=26):
