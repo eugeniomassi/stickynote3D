@@ -141,3 +141,30 @@ class DeletePostItOperator(bpy.types.Operator):
             bpy.data.objects.remove(obj, do_unlink=True)
             return {'FINISHED'}
         return {'CANCELLED'}
+    
+class ViewPostItOperator(bpy.types.Operator):
+    """Seleziona un Post-it e centra la vista su di esso"""
+    bl_idname = "object.view_postit"
+    bl_label = "Seleziona Post-it e centra la vista"
+
+    postit_name: bpy.props.StringProperty()
+
+    def execute(self, context):
+        obj = bpy.data.objects.get(self.postit_name)
+        if obj:
+            # Seleziona l'oggetto Post-it
+            context.view_layer.objects.active = obj
+            obj.select_set(True)
+
+            # Centra la vista su di esso
+            for area in bpy.context.screen.areas:
+                if area.type == 'VIEW_3D':
+                    space = area.spaces.active
+                    region_3d = space.region_3d
+
+                    # Posiziona la visuale sul Post-it
+                    region_3d.view_location = obj.location
+                    region_3d.view_rotation = obj.rotation_euler.to_quaternion()
+
+            return {'FINISHED'}
+        return {'CANCELLED'}
