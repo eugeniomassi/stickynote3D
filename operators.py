@@ -18,6 +18,7 @@ class CreatePostItOperator(bpy.types.Operator):
 
     def execute(self, context):
         location = (0, 0, 0)
+        bpy.ops.object.mode_set(mode='OBJECT')
         create_postit(context, self.title, self.description, self.user, self.color, self.size, location)
         return {'FINISHED'}
 
@@ -44,7 +45,7 @@ class CreatePostItFaceSelectedOperator(bpy.types.Operator):
 
         center = face.calc_center_median()
         normal = face.normal
-        size = face.calc_area() ** 0.5
+        size = (face.calc_area() ** 0.5)/2.0
 
         rotation_matrix = normal.to_track_quat('Z', 'Y').to_euler()
 

@@ -15,9 +15,8 @@ class PostItPanel(bpy.types.Panel):
         # Pulsante per aggiungere un nuovo Post-it con un'icona
         layout.operator("object.create_postit", text="Aggiungi Post-it", icon='ADD')
 
-        layout.separator()  # Aggiunge uno spazio di separazione
+        layout.separator()
         
-        # Ordina i Post-it in base alla data di modifica
         sorted_objects = sorted(bpy.data.objects, key=lambda obj: obj.get("postit_datetime", ""), reverse=True)
 
         # Visualizza la lista di tutti i Post-it nella scena
@@ -32,11 +31,11 @@ class PostItPanel(bpy.types.Panel):
                 # Se l'oggetto è selezionato, mostra i dettagli
                 if context.object == obj:
                     box = col.box()
-                    # Aggiungi la data e il pulsante occhio per centrare la vista
                     row = box.row(align=True)
                     row.label(text=f"{obj['postit_title'].upper()} :")
                     op = row.operator("object.view_postit", text="", icon='HIDE_OFF')
                     op.postit_name = obj.name
+                    
                     #logica per la descrizione
                     description_lines = []
                     description = obj.get("postit_description", "")
