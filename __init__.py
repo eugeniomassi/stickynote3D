@@ -7,7 +7,7 @@ bl_info = {
     "blender": (4, 0, 0),
     "category": "Object",
     "author": "Eugenio Massi",
-    "version": (1, 0, 8),
+    "version": (1, 2, 0),
     "description": "A plugin to manage 3D sticky notes in Blender",
 }
 

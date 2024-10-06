@@ -59,7 +59,8 @@ class MESH_MT_add_postit(bpy.types.Menu):
 
     def draw(self, context):
         layout = self.layout
-        layout.operator("mesh.create_postit_face", text="Seleziona una faccia su cui aggiungere il Post-It")
+        layout.operator("object.create_postit", text="Aggiungi Post-It")
+        layout.operator("mesh.create_postit_face", text="Aggiungi Post-It su questa faccia")
 
 def menu_func(self, context):
     self.layout.menu(MESH_MT_add_postit.bl_idname)
